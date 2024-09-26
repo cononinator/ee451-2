@@ -96,14 +96,15 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Sources/sources_1/new/fsm.vhd">
+      <File Path="$PPRDIR/Sources/sim_1/new/Testbench.vhd">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Sources/sim_1/new/Testbench.vhd">
+      <File Path="$PPRDIR/Sources/sources_1/new/fsm.vhd">
         <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>

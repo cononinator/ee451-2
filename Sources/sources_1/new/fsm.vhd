@@ -1,75 +1,80 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- Testbench for JTAG TAP Controller
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
+entity tb_jtag_tap is
+end tb_jtag_tap;
 
--- Define the FSM entity
-entity FSM is
-    Port (
-        CLK   : in  STD_LOGIC;      -- Clock signal
-        RST   : in  STD_LOGIC;      -- Reset signal
-        A     : in  STD_LOGIC;      -- Input signal
-        Alive : out STD_LOGIC       -- Output signal
-    );
-end FSM;
+architecture behavior of tb_jtag_tap is
 
-architecture Behavioral of FSM is
+    -- Signals
+    signal TCK   : std_logic := '0';
+    signal TMS   : std_logic := '0';
+    signal TDI   : std_logic := '0';
+    signal TDO   : std_logic;
+    signal TRST  : std_logic := '1';  -- Test reset
 
-    -- Define the FSM states
-    type state_type is (IDLE, CONFIG, DRIVE);
-    signal state, next_state : state_type;   
-    -- Define the internal counter (Ccount)
-    signal Ccount : STD_LOGIC_VECTOR(1 downto 0);  -- 2-bit counter (0 to 3)
+    -- Clock period
+    constant TCK_PERIOD : time := 20 ns;
 
+begin
+
+    -- DUT instantiation
+    uut: entity work.jtag_tap
+        port map (
+            TCK  => TCK,
+            TMS  => TMS,
+            TDI  => TDI,
+            TDO  => TDO,
+            TRST => TRST
+        );
+
+    -- Generate TCK clock
+    TCK_process: process
     begin
-    
-    process (CLK, RST) -- Clock Process
+        while true loop
+            TCK <= '0';
+            wait for TCK_PERIOD / 2;
+            TCK <= '1';
+            wait for TCK_PERIOD / 2;
+        end loop;
+    end process;
+
+    -- Main test process
+    test_process: process
     begin
-        if rising_edge(CLK) then
-            if RST = '0' then
-                -- Reset state to IDLE and reset the counter
-                state <= IDLE;
-                
-            else
-                -- Move to the next state
-                state <= next_state;
-            end if;
-        end if;
-    end process;
-    
-    process (state, Ccount) --Combinatorial Process
-    begin 
-        case state is 
-            when IDLE =>
-                Alive <= '0';
-                next_state <= CONFIG;
+        -- Reset the TAP controller
+        TRST <= '0';
+        wait for 3 * TCK_PERIOD;
+        TRST <= '1';
 
-            when CONFIG =>
-                Alive <= '0';
-                if Ccount = "11" then 
-                    next_state <= DRIVE;
-                else 
-                    next_state <= CONFIG;
-                end if;    
-                       
-            when DRIVE =>
-                Alive <= '1';
-            
-        end case;     
-    end process;
-    
-    process (CLK, A, state) -- Count Process
-    begin
-        if rising_edge(CLK) then
-            if (state = CONFIG and A = '1') then
-                Ccount <= Ccount + "1";
-            else 
-                Ccount <= "00";
-            end if;
-        end if;
-    end process;
-    
-end Behavioral;
+        -- Move to 'Run-Test/Idle' state
+        TMS <= '0';  -- From Test-Logic-Reset to Run-Test/Idle
+        wait for TCK_PERIOD;
 
+        -- Transition through various states
+        -- Select-DR-Scan
+        TMS <= '1';  wait for TCK_PERIOD;
+        -- Capture-DR
+        TMS <= '0';  wait for TCK_PERIOD;
+        -- Shift-DR
+        TMS <= '0';  wait for TCK_PERIOD;
+        
+        -- Provide a test input via TDI and observe TDO
+        TDI <= '1';  wait for TCK_PERIOD;
+        TDI <= '0';  wait for TCK_PERIOD;
+        
+        -- Exit1-DR
+        TMS <= '1';  wait for TCK_PERIOD;
+        -- Update-DR
+        TMS <= '1';  wait for TCK_PERIOD;
 
+        -- Return to Run-Test/Idle
+        TMS <= '0';  wait for TCK_PERIOD;
+        
+        -- Finish simulation
+        wait;
+    end process;
+
+end behavior;
