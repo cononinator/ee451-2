@@ -21,7 +21,7 @@ architecture behavior of tb_jtag_tap is
 begin
 
     -- DUT instantiation
-    uut: entity work.jtag_tap
+    uut: entity work.JTAG_TAP_CONTROLLER
         port map (
             TCK  => TCK,
             TMS  => TMS,
